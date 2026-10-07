@@ -1,0 +1,5 @@
+{
+  "name": "next-steps",
+  "owner": { "name": "Antoine Debourdeau" },
+  "plugins": [{ "name": "next-steps", "source": "./" }]
+}

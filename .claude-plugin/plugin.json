@@ -1,0 +1,7 @@
+{
+  "name": "next-steps",
+  "version": "0.1.0",
+  "description": "Trois suggestions de prochaine étape en boutons cliquables à la fin de chaque réponse",
+  "author": { "name": "Antoine Debourdeau" },
+  "types": "./types/index.d.ts"
+}
