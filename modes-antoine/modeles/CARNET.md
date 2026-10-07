@@ -1,0 +1,16 @@
+# <Nom du projet>
+
+**Objet** : une phrase.
+**Dossier** : ~/Downloads/<Projet>/
+
+## Fichiers clés
+- source : …
+- livrable courant : …_v1
+
+## Décisions et interdits
+- AAAA-MM-JJ : …
+
+## État
+- fait : …
+- en cours : …
+- prochaine étape : …
