@@ -1,5 +1,8 @@
 {
   "name": "next-steps",
   "owner": { "name": "Antoine Debourdeau" },
-  "plugins": [{ "name": "next-steps", "source": "./" }]
+  "plugins": [
+    { "name": "next-steps", "source": "./" },
+    { "name": "progress-bar", "source": "./plugins/progress-bar" }
+  ]
 }
