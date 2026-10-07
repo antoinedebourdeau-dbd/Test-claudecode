@@ -23,3 +23,7 @@ Un clic (ou la touche `1`/`2`/`3`) envoie la suggestion comme si vous l'aviez ta
 - `ui.render (AbovePrompt)` dessine les boutons ; `$.prompt.submit({ asUser: true })` envoie la suggestion choisie.
 
 Tests : `claude plugin test .`
+
+---
+
+Cette marketplace contient aussi le plugin **corbeille** (suppressions → corbeille système) : voir [`plugins/corbeille/README.md`](plugins/corbeille/README.md).

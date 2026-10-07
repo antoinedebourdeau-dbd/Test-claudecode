@@ -1,0 +1,6 @@
+{
+  "name": "corbeille",
+  "version": "0.1.0",
+  "description": "Mode corbeille : toute suppression de fichier ou dossier par Claude passe par la corbeille du système, avec la liste de ce qui a été déplacé",
+  "author": { "name": "Antoine Debourdeau" }
+}
