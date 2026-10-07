@@ -29,7 +29,7 @@ test('parses and strips the block', () => {
   expect(stripBlock(ANSWER)).toBe('La sensibilité du test au charbon est d’environ 80 %.')
 })
 
-for (const surface of ['terminal', 'desktop'] as const) {
+for (const surface of ['terminal'] as const) {
   test(`buttons send the suggestion, Ignorer clears (${surface})`, async ($, on) => {
     engine(on)
     const sent: string[] = []
@@ -67,3 +67,28 @@ test('the transcript hides the block', async ($, on) => {
   } as never)
   expect(JSON.stringify(tree)).not.toContain('next-steps>')
 })
+
+for (const surface of ['mobile', 'desktop', 'vscode'] as const) {
+  test(`buttons under the latest reply (${surface})`, async ($, on) => {
+    engine(on)
+    const sent: string[] = []
+    on('prompt.submit', ($, e) => {
+      sent.push(e.text)
+      return { text: e.text }
+    })
+    on('turn.complete', ($, e) => ({ text: e.answer }))
+    await $.turn.complete({ answer: ANSWER, durationMs: 1, isAborted: false, turnId: 't1', reason: 'answer' })
+
+    const ui = await $.ui.mount({
+      plugin: 'next-steps',
+      surface,
+      component: 'AssistantMessage',
+      props: { text: ANSWER, isFirstOfReply: true },
+    })
+    expect(JSON.stringify(await ui.drawn())).not.toContain('next-steps>')
+    expect(await ui.findAll({ type: 'Button' })).toHaveLength(4)
+    await ui.press({ key: 's3' })
+    expect(sent).toEqual(['Fais un QCM sur ce point'])
+    expect(await ui.findAll({ type: 'Button' })).toHaveLength(0)
+  })
+}

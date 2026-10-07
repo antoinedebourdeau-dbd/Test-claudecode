@@ -1,6 +1,6 @@
 # next-steps — mod Claude Code
 
-À la fin de chaque réponse, Claude propose trois prochaines étapes, affichées en boutons au-dessus du prompt.
+À la fin de chaque réponse, Claude propose trois prochaines étapes en boutons : sous la réponse dans l'app Claude (web, mobile, desktop, VS Code), au-dessus du prompt dans le terminal.
 Un clic (ou la touche `1`/`2`/`3`) envoie la suggestion comme si vous l'aviez tapée ; `Ignorer` (touche `x`) les masque.
 
 ## Installation

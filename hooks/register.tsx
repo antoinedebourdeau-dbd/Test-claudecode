@@ -9,7 +9,7 @@ const BLOCK_ALL = /\s*<next-steps>[\s\S]*?(<\/next-steps>|$)/gi
 
 const INSTRUCTION = [
   'At the very end of every reply, append exactly three short, concrete next-step suggestions the user could send you next,',
-  'written in the language of the conversation, from the user\'s point of view (as a prompt they would type), each under 80 characters,',
+  "written in the language of the conversation, from the user's point of view (as a prompt they would type), each under 80 characters,",
   'in this exact format and nothing after it:',
   '<next-steps>',
   '- first suggestion',
@@ -22,7 +22,7 @@ const INSTRUCTION = [
 export function parseSuggestions(text: string): string[] {
   const m = BLOCK.exec(text)
   if (!m) return []
-  return (m[1] ?? "")
+  return (m[1] ?? '')
     .split('\n')
     .map(line => line.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').trim())
     .filter(line => line.length > 0)
@@ -33,12 +33,25 @@ export function stripBlock(text: string): string {
   return text.replace(BLOCK_ALL, '').trimEnd()
 }
 
+function sameList(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((x, i) => x === b[i])
+}
+
+// Diagnostic journal, written to <mod>/debug.log.
+const journal: string[] = []
+function logLine(line: string): string {
+  journal.push(`${new Date().toISOString()} ${line}`)
+  if (journal.length > 200) journal.shift()
+  return journal.join('\n') + '\n'
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'next-steps',
       description: 'Suggestions de prochaine étape : on | off | clear',
     })
+    void $.fs.write(`${$.plugin.root}/debug.log`, logLine(`session.start surfaces=${(await $.session.surfaces()).join(',')}`)).catch(() => undefined)
     return next(e)
   })
 
@@ -57,14 +70,14 @@ export const register: Register = on => {
       await update($, suggestions, () => [])
       return { text: 'Suggestions masquées.' }
     }
-    const on_ = (await $.store.get(ENABLED_KEY)) !== false
-    return { text: `Suggestions ${on_ ? 'activées' : 'désactivées'}. Usage : /next-steps on | off | clear` }
+    const isOn = (await $.store.get(ENABLED_KEY)) !== false
+    return { text: `Suggestions ${isOn ? 'activées' : 'désactivées'}. Usage : /next-steps on | off | clear` }
   })
 
   // Ask the model for the block.
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)
-    if (!((await $.store.get(ENABLED_KEY)) !== false)) return composed
+    if ((await $.store.get(ENABLED_KEY)) === false) return composed
     return {
       ...composed,
       sections: [...composed.sections, { id: 'next-steps:instruction', text: INSTRUCTION, scope: 'session' as const }],
@@ -79,44 +92,69 @@ export const register: Register = on => {
 
   // Capture the block at the end of the main loop's turn.
   on('turn.complete', async ($, e, next) => {
-    if (!e.agentId && e.reason === 'answer' && ((await $.store.get(ENABLED_KEY)) !== false)) {
+    if (!e.agentId && e.reason === 'answer' && (await $.store.get(ENABLED_KEY)) !== false) {
       const found = parseSuggestions(e.answer)
       await update($, suggestions, () => found)
+      void $.fs.write(`${$.plugin.root}/debug.log`, logLine(`turn.complete found=${found.length}`)).catch(() => undefined)
     }
     return next(e)
   })
 
-  // Hide the raw block from the transcript.
-  on('ui.render', { component: 'AssistantMessage' }, ($, e, next) => {
+  // The reply: block hidden everywhere; on the app surfaces, the buttons drawn under the latest reply.
+  on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     if (!/<next-steps>/i.test(e.props.text)) return next(e)
-    return next({ ...e, props: { ...e.props, text: stripBlock(e.props.text) } })
+    const text = stripBlock(e.props.text)
+    const items = parseSuggestions(e.props.text)
+    const current = await read($, suggestions)
+    const isLatest = items.length > 0 && sameList(items, current)
+    void $.fs.write(`${$.plugin.root}/debug.log`, logLine(`render AssistantMessage surface=${e.surface} latest=${isLatest}`)).catch(() => undefined)
+
+    if (e.surface === 'terminal' || !isLatest || e.props.isSummary) {
+      return next({ ...e, props: { ...e.props, text } })
+    }
+    const { Box, Button, Markdown, Text } = $.ui.resolve(e)
+    return (
+      <Box flexDirection="column">
+        <Markdown text={text} />
+        <Text dimColor>Prochaines étapes :</Text>
+        {items.map((s, i) => (
+          <Button
+            key={`s${i + 1}`}
+            label={s}
+            onPress={async () => {
+              await update($, suggestions, () => [])
+              void $.prompt.submit({ text: s, asUser: true })
+            }}
+          />
+        ))}
+        <Button key="dismiss" label="Ignorer" dimColor onPress={() => update($, suggestions, () => [])} />
+      </Box>
+    )
   })
 
-  // The buttons above the prompt.
+  // The terminal: buttons in the band above the prompt.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const list = await read($, suggestions)
-    if (e.props.hasSurvey || e.props.isWorking || list.length === 0 || !((await $.store.get(ENABLED_KEY)) !== false)) {
+    if (e.surface !== 'terminal' || e.props.hasSurvey || e.props.isWorking || list.length === 0) {
       return next(e)
     }
     const { Box, Button, Text } = $.ui.resolve(e)
-    const send = async (text: string) => {
-      await update($, suggestions, () => [])
-      void $.prompt.submit({ text, asUser: true })
-    }
     return (
       <Box flexDirection="column">
         <Text dimColor>Prochaines étapes :</Text>
         {list.map((s, i) => (
-          <Button key={`s${i + 1}`} label={s} hotkey={String(i + 1)} plain onPress={() => send(s)} />
+          <Button
+            key={`s${i + 1}`}
+            label={s}
+            hotkey={String(i + 1)}
+            plain
+            onPress={async () => {
+              await update($, suggestions, () => [])
+              void $.prompt.submit({ text: s, asUser: true })
+            }}
+          />
         ))}
-        <Button
-          key="dismiss"
-          label="Ignorer"
-          hotkey="x"
-          plain
-          dimColor
-          onPress={() => update($, suggestions, () => [])}
-        />
+        <Button key="dismiss" label="Ignorer" hotkey="x" plain dimColor onPress={() => update($, suggestions, () => [])} />
       </Box>
     )
   })
