@@ -94,9 +94,11 @@ export const register: Register = on => {
 
   // The buttons above the prompt.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    // Whatever other mods draw in the band (chaos-bar) stays above the buttons.
+    const below = await next(e)
     const list = await read($, suggestions)
     if (e.props.hasSurvey || e.props.isWorking || list.length === 0 || !((await $.store.get(ENABLED_KEY)) !== false)) {
-      return next(e)
+      return below
     }
     const { Box, Button, Text } = $.ui.resolve(e)
     const send = async (text: string) => {
@@ -105,6 +107,7 @@ export const register: Register = on => {
     }
     return (
       <Box flexDirection="column">
+        {below.type === 'engine' ? null : below}
         <Text dimColor>Prochaines étapes :</Text>
         {list.map((s, i) => (
           <Button key={`s${i + 1}`} label={s} hotkey={String(i + 1)} plain onPress={() => send(s)} />

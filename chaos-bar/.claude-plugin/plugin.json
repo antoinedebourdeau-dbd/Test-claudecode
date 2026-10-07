@@ -1,0 +1,7 @@
+{
+  "name": "chaos-bar",
+  "version": "0.1.0",
+  "description": "Barre de jauges au-dessus du prompt : session 5 h, semaine, Fable, contexte et coût, en couleurs chaos",
+  "author": { "name": "Antoine Debourdeau" },
+  "types": "./types/index.d.ts"
+}

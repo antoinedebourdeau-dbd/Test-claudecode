@@ -1,5 +1,9 @@
 {
   "name": "next-steps",
+  "description": "Mods Claude Code d'Antoine Debourdeau : suggestions de prochaine étape et barre de jauges chaos",
   "owner": { "name": "Antoine Debourdeau" },
-  "plugins": [{ "name": "next-steps", "source": "./" }]
+  "plugins": [
+    { "name": "next-steps", "source": "./" },
+    { "name": "chaos-bar", "source": "./chaos-bar" }
+  ]
 }
